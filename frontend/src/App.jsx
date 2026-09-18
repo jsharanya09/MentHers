@@ -1,21 +1,16 @@
-import { useEffect, useState } from 'react'
+import Questionnaire from './components/Questionnaire'
 
 function App() {
-  const [status, setStatus] = useState('checking...')
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus('backend not reachable'))
-  }, [])
-
   return (
-    <main>
-      <h1>MentHers</h1>
-      <p>Mentor matching app</p>
-      <p>Backend status: {status}</p>
-    </main>
+    <>
+      <header className="site-header">
+        <h1>MentHers</h1>
+        <p>Answer a few questions and we’ll help you find your match.</p>
+      </header>
+      <main>
+        <Questionnaire />
+      </main>
+    </>
   )
 }
 
