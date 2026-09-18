@@ -48,6 +48,11 @@ export function requestIntro({ menteeId, mentorId, message }) {
   return request('POST', '/api/intro-requests', { menteeId, mentorId, message })
 }
 
+// Asks the backend for an AI-written first draft of the intro message.
+export function draftIntro({ menteeId, mentorId }) {
+  return request('POST', '/api/intro-drafts', { menteeId, mentorId })
+}
+
 export function fetchMentorRequests(token) {
   return request('GET', '/api/mentor-requests', undefined, { 'X-Mentor-Token': token })
 }

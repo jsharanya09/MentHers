@@ -6,20 +6,23 @@ import {
   createMentee,
   createMentor,
   getMentee,
+  getMenteeProfile,
   getMentorByToken,
   getMentorContact,
+  getMentorProfile,
   isEmailVerified,
   listMentors,
   listRequestsForMentor,
   markRequestsSeen,
   requestedMentorIds,
 } from './db.js'
+import { aiEnabled, assessMatches, draftIntroMessage } from './ai.js'
 import { CODE_TTL_MINUTES, confirmCode, createCode } from './emailVerification.js'
-import { matchMentors } from './matching.js'
+import { blendWithAi, matchMentors } from './matching.js'
 import { sendNewRequestEmail, sendVerificationEmail } from './mailer.js'
 import { parseIntroRequest, parseMenteeAnswers } from './menteeSignup.js'
 import { parseMentorSignup } from './mentorSignup.js'
-import { isEmail } from './validation.js'
+import { isEmail, isText } from './validation.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -103,7 +106,7 @@ const NOT_VERIFIED = { error: 'Please verify your email address first.' }
 
 // Saves a mentee's questionnaire answers and returns ranked mentor matches.
 // `menteeId` is private to that mentee and is needed to send intro requests.
-app.post('/api/matches', (req, res) => {
+app.post('/api/matches', rateLimit({ windowMs: HOUR, max: 60 }), async (req, res) => {
   const { mentee, error } = parseMenteeAnswers(req.body)
   if (error) return res.status(400).json({ error })
   if (!isEmailVerified(mentee.email, req.body.verificationToken)) {
@@ -113,12 +116,43 @@ app.post('/api/matches', (req, res) => {
   const menteeId = createMentee(mentee)
   const alreadyRequested = requestedMentorIds(mentee.email)
 
-  const matches = matchMentors(mentee, listMentors()).map((match) => ({
+  // Rules pick the best 8, then AI (when configured) reads the mentee's goal and the mentors'
+  // bios to reorder them and explain each one. Without AI the rule-based top 5 is used.
+  const candidates = matchMentors(mentee, listMentors(), 8)
+  const assessments = await assessMatches(mentee, candidates)
+
+  const matches = blendWithAi(candidates, assessments).map((match) => ({
     ...match,
     requested: alreadyRequested.has(match.mentor.id),
   }))
 
-  res.json({ menteeId, matches })
+  res.json({ menteeId, matches, aiDrafting: aiEnabled() })
+})
+
+// Writes a first draft of an intro message for the mentee to edit. Uses AI, so it is rate limited.
+app.post('/api/intro-drafts', rateLimit({ windowMs: HOUR, max: 30 }), async (req, res) => {
+  const { menteeId, mentorId } = req.body ?? {}
+  if (!isText(menteeId, 64) || !Number.isInteger(mentorId)) {
+    return res.status(400).json({ error: 'Something went wrong. Please try again.' })
+  }
+
+  const mentee = getMenteeProfile(menteeId)
+  const mentor = getMentorProfile(mentorId)
+  if (!mentee || !mentor) {
+    return res.status(404).json({ error: 'We couldn’t find that mentor. Please try again.' })
+  }
+  if (!aiEnabled()) {
+    return res.status(503).json({ error: 'Message suggestions aren’t available right now.' })
+  }
+
+  const draft = await draftIntroMessage(mentee, mentor)
+  if (!draft) {
+    return res
+      .status(502)
+      .json({ error: 'We couldn’t write a draft right now. You can write your own message.' })
+  }
+
+  res.json({ draft })
 })
 
 // Saves a new mentor from the mentor questionnaire.

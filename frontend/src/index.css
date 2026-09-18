@@ -560,6 +560,31 @@ textarea:focus-visible {
   color: var(--primary);
 }
 
+/* AI */
+.insight {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  background: var(--primary-tint);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.insight-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.draft-button {
+  display: block;
+  margin: 4px 0 4px;
+  font-weight: 600;
+}
+
 /* Mentor inbox */
 .notice {
   margin: 0 0 16px;

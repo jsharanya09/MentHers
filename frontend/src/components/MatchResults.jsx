@@ -26,7 +26,7 @@ function buildReasons(matched) {
   return reasons
 }
 
-function MatchResults({ answers, menteeId, matches, onEdit, onRestart }) {
+function MatchResults({ answers, menteeId, aiDrafting, matches, onEdit, onRestart }) {
   const headingRef = useRef(null)
 
   useEffect(() => {
@@ -61,7 +61,7 @@ function MatchResults({ answers, menteeId, matches, onEdit, onRestart }) {
       </div>
 
       <ul className="match-list">
-        {matches.map(({ mentor, score, matched, requested }) => (
+        {matches.map(({ mentor, score, matched, requested, insight }) => (
           <li key={mentor.id} className="card match">
             <div className="match-head">
               <div className="avatar" aria-hidden="true">
@@ -81,6 +81,12 @@ function MatchResults({ answers, menteeId, matches, onEdit, onRestart }) {
                 <span>match</span>
               </div>
             </div>
+            {insight && (
+              <p className="insight">
+                <span className="insight-label">Why you two might click</span>
+                {insight}
+              </p>
+            )}
             <p className="match-bio">{mentor.bio}</p>
             <ul className="reasons">
               {buildReasons(matched).map((reason) => (
@@ -88,7 +94,12 @@ function MatchResults({ answers, menteeId, matches, onEdit, onRestart }) {
               ))}
             </ul>
             <div className="match-action">
-              <IntroRequest mentor={mentor} menteeId={menteeId} alreadyRequested={requested} />
+              <IntroRequest
+                mentor={mentor}
+                menteeId={menteeId}
+                alreadyRequested={requested}
+                canDraft={aiDrafting}
+              />
             </div>
           </li>
         ))}

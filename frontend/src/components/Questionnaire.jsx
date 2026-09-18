@@ -131,6 +131,7 @@ function Questionnaire({ initialRole }) {
       <MatchResults
         answers={answers}
         menteeId={result.menteeId}
+        aiDrafting={result.aiDrafting}
         matches={result.matches}
         onEdit={handleEdit}
         onRestart={handleRestart}
@@ -141,7 +142,14 @@ function Questionnaire({ initialRole }) {
   }
 
   if (stage === 'verify') {
-    return <VerifyEmail email={email} onVerified={handleVerified} onChangeEmail={handleChangeEmail} />
+    return (
+      <VerifyEmail
+        email={email}
+        busyLabel={answers.role === 'mentee' ? 'Finding your matches…' : 'Signing you up…'}
+        onVerified={handleVerified}
+        onChangeEmail={handleChangeEmail}
+      />
+    )
   }
 
   return (
@@ -181,7 +189,7 @@ function Questionnaire({ initialRole }) {
           </button>
         )}
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {isLastStep ? (submitting ? 'Submitting…' : 'Submit') : 'Next'}
+          {isLastStep ? (submitting ? 'One moment…' : 'Submit') : 'Next'}
         </button>
       </div>
     </form>

@@ -299,3 +299,22 @@ export function isEmailVerified(email, token, now = Date.now()) {
     .get(token, email, now)
   return row !== undefined
 }
+
+// ---- Profiles used by the AI features ----
+
+export function getMenteeProfile(id) {
+  const row = db.prepare('SELECT name, stage, fields, skills, goals FROM mentees WHERE id = ?').get(id)
+  if (!row) return undefined
+  return {
+    name: row.name,
+    stage: row.stage,
+    fields: JSON.parse(row.fields),
+    skills: JSON.parse(row.skills),
+    goals: row.goals,
+  }
+}
+
+export function getMentorProfile(id) {
+  const row = db.prepare('SELECT * FROM mentors WHERE id = ?').get(id)
+  return row ? fromRow(row) : undefined
+}
