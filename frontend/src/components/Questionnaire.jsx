@@ -7,7 +7,7 @@ import MatchResults from './MatchResults'
 import ThankYou from './ThankYou'
 import VerifyEmail from './VerifyEmail'
 
-function Questionnaire({ initialRole }) {
+function Questionnaire({ initialRole, onSignedIn }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [answers, setAnswers] = useState({ role: initialRole })
   const [errors, setErrors] = useState({})
@@ -78,6 +78,7 @@ function Questionnaire({ initialRole }) {
     try {
       if (verification?.email === email) {
         setResult(await submitAnswers(answers, verification.token))
+        onSignedIn?.()
       } else {
         // Not verified yet: email a code and ask for it before saving anything.
         await sendVerificationCode(email)
@@ -95,6 +96,7 @@ function Questionnaire({ initialRole }) {
     setVerification({ email, token })
     try {
       setResult(await submitAnswers(answers, token))
+      onSignedIn?.()
     } catch (error) {
       showSubmitError(error)
     } finally {
@@ -131,17 +133,25 @@ function Questionnaire({ initialRole }) {
       <MatchResults
         answers={answers}
         menteeId={result.menteeId}
+        aiDrafting={result.aiDrafting}
         matches={result.matches}
         onEdit={handleEdit}
         onRestart={handleRestart}
       />
     ) : (
-      <ThankYou answers={answers} token={result.token} onRestart={handleRestart} />
+      <ThankYou answers={answers} onRestart={handleRestart} />
     )
   }
 
   if (stage === 'verify') {
-    return <VerifyEmail email={email} onVerified={handleVerified} onChangeEmail={handleChangeEmail} />
+    return (
+      <VerifyEmail
+        email={email}
+        busyLabel={answers.role === 'mentee' ? 'Finding your matches…' : 'Signing you up…'}
+        onVerified={handleVerified}
+        onChangeEmail={handleChangeEmail}
+      />
+    )
   }
 
   return (
@@ -181,7 +191,7 @@ function Questionnaire({ initialRole }) {
           </button>
         )}
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {isLastStep ? (submitting ? 'Submitting…' : 'Submit') : 'Next'}
+          {isLastStep ? (submitting ? 'One moment…' : 'Submit') : 'Next'}
         </button>
       </div>
     </form>

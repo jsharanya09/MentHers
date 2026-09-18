@@ -32,13 +32,13 @@ export function confirmVerificationCode(email, code) {
 }
 
 // Mentees get back { menteeId, matches }, a ranked list of mentors.
-// Mentors are saved and get back { token } for their private inbox link.
+// Mentors are saved (and signed in) and get back an empty list of matches.
 export async function submitAnswers(answers, verificationToken) {
   const body = { ...answers, verificationToken }
 
   if (answers.role === 'mentor') {
-    const { token } = await request('POST', '/api/mentors', body)
-    return { matches: [], token }
+    await request('POST', '/api/mentors', body)
+    return { matches: [] }
   }
 
   return request('POST', '/api/matches', body)
@@ -48,10 +48,46 @@ export function requestIntro({ menteeId, mentorId, message }) {
   return request('POST', '/api/intro-requests', { menteeId, mentorId, message })
 }
 
-export function fetchMentorRequests(token) {
-  return request('GET', '/api/mentor-requests', undefined, { 'X-Mentor-Token': token })
+// Asks the backend for an AI-written first draft of the intro message.
+export function draftIntro({ menteeId, mentorId }) {
+  return request('POST', '/api/intro-drafts', { menteeId, mentorId })
 }
 
-export function markRequestsSeen(token) {
-  return request('POST', '/api/mentor-requests/seen', undefined, { 'X-Mentor-Token': token })
+// ---- Accounts ----
+
+export async function fetchMe() {
+  const { user } = await request('GET', '/api/me')
+  return user
+}
+
+export function login(email, code) {
+  return request('POST', '/api/auth/login', { email, code })
+}
+
+export function logout() {
+  return request('POST', '/api/auth/logout', {})
+}
+
+export function deleteMyAccount() {
+  return request('DELETE', '/api/me')
+}
+
+export function fetchMyRequests() {
+  return request('GET', '/api/me/requests')
+}
+
+export function markMyRequestsSeen() {
+  return request('POST', '/api/me/requests/seen', {})
+}
+
+export function respondToRequest(requestId, status) {
+  return request('POST', `/api/me/requests/${requestId}/respond`, { status })
+}
+
+export function fetchSentRequests() {
+  return request('GET', '/api/me/sent-requests')
+}
+
+export function sendReport(requestId, reason) {
+  return request('POST', '/api/reports', { requestId, reason })
 }

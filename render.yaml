@@ -1,0 +1,37 @@
+# Blueprint for deploying MentHers to Render (https://render.com) as one web service.
+# The backend serves the built frontend, so only this one service is needed.
+services:
+  - type: web
+    name: menthers
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install
+    startCommand: node backend/src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set these in the Render dashboard (they are secrets, so they are not stored in this file):
+      - key: APP_URL # your site's address, for example https://menthers.onrender.com
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: ANTHROPIC_API_KEY # optional: turns on the AI features
+        sync: false
+      - key: ADMIN_EMAIL # optional: where safety reports are emailed
+        sync: false
+    # The free plan has no permanent disk, so the database resets each time the service restarts
+    # (the demo mentors are added back automatically). To keep data, use a paid plan and add:
+    #   disk:
+    #     name: data
+    #     mountPath: /var/data
+    #     sizeGB: 1
+    # and set the environment variable DB_PATH=/var/data/menthers.db

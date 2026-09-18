@@ -1,0 +1,12 @@
+{
+  "name": "menthers",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MentHers: a mentor matching community for women and girls",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "install:all": "npm --prefix frontend install && npm --prefix backend install",
+    "build": "npm --prefix frontend run build",
+    "start": "node backend/src/server.js"
+  }
+}

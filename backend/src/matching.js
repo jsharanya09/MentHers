@@ -59,3 +59,25 @@ export function matchMentors(mentee, mentors, limit = 5) {
     .sort((a, b) => b.score - a.score || a.mentor.name.localeCompare(b.mentor.name))
     .slice(0, limit)
 }
+
+// Blends the rule-based score with the AI's judgement of how well a mentor fits what the mentee
+// wrote (60% rules, 40% AI), attaches the AI's one-line reason, and returns the top results.
+// With no assessments (AI off or failed) it just returns the rule-based order.
+export function blendWithAi(candidates, assessments, limit = 5) {
+  const blended = candidates.map((candidate) => {
+    const assessment = assessments?.get(candidate.mentor.id)
+    if (!assessments) return candidate
+
+    // A mentor the AI didn't rate keeps their rule score as a neutral AI score.
+    const fit = assessment?.fit ?? candidate.score
+    return {
+      ...candidate,
+      score: Math.round(0.6 * candidate.score + 0.4 * fit),
+      ...(assessment && { insight: assessment.why }),
+    }
+  })
+
+  return blended
+    .sort((a, b) => b.score - a.score || a.mentor.name.localeCompare(b.mentor.name))
+    .slice(0, limit)
+}

@@ -17,10 +17,6 @@ const transporter = configured
 const appUrl = (APP_URL || 'http://localhost:5173').replace(/\/$/, '')
 const from = MAIL_FROM || 'MentHers <no-reply@menthers.local>'
 
-export function inboxLink(token) {
-  return `${appUrl}/#/requests/${token}`
-}
-
 // Sends one email. Never throws; returns true if it was sent (or printed when email isn't
 // configured) and false if sending failed. `devNote` is only printed in the unconfigured case.
 async function deliver(message, devNote) {
@@ -58,7 +54,7 @@ export function sendVerificationEmail(email, code, ttlMinutes) {
 }
 
 // Tells a mentor they have a new intro request. The email only names the mentee and links to
-// the mentor's private inbox; the message and contact details stay on that page.
+// the mentor's account; the message and contact details stay behind sign-in.
 export async function sendNewRequestEmail(mentor, menteeName) {
   if (!mentor.email) return false
 
@@ -72,12 +68,75 @@ export async function sendNewRequestEmail(mentor, menteeName) {
         `Hi ${mentor.name},`,
         '',
         `${safeName} asked for an introduction on MentHers.`,
-        'See their message and how to reach them here:',
-        inboxLink(mentor.token),
-        '',
-        'Keep this link private. Anyone who has it can see your requests.',
+        'Sign in to read their message and accept or decline:',
+        accountLink(),
       ].join('\n'),
     },
-    `Inbox link: ${inboxLink(mentor.token)}`,
+    `Account link: ${accountLink()}`,
+  )
+}
+
+const oneLine = (text) => text.replace(/[\r\n]+/g, ' ').trim()
+
+export function accountLink() {
+  return `${appUrl}/#/account`
+}
+
+// Tells a mentee how their intro request was answered. If it was accepted, the mentor has agreed to
+// share their email address, so it is included.
+export function sendRequestResponseEmail({ menteeEmail, menteeName, mentorName, mentorEmail, status }) {
+  const mentor = oneLine(mentorName)
+
+  if (status === 'accepted') {
+    return deliver(
+      {
+        to: menteeEmail,
+        subject: `${mentor} accepted your intro request on MentHers`,
+        text: [
+          `Hi ${oneLine(menteeName)},`,
+          '',
+          `Good news! ${mentor} accepted your intro request.`,
+          mentorEmail ? `You can reach them at ${mentorEmail}.` : 'Sign in to see how to reach them.',
+          '',
+          `See all your requests: ${accountLink()}`,
+        ].join('\n'),
+      },
+      `Accepted by ${mentor}`,
+    )
+  }
+
+  return deliver(
+    {
+      to: menteeEmail,
+      subject: `An update on your intro request to ${mentor}`,
+      text: [
+        `Hi ${oneLine(menteeName)},`,
+        '',
+        `${mentor} isn't able to take on a new mentee right now. Please don't be discouraged.`,
+        'Other mentors could be a great fit. You can ask one of them for an intro:',
+        `${appUrl}/#/find`,
+      ].join('\n'),
+    },
+    `Declined by ${mentor}`,
+  )
+}
+
+// Lets the site owner know that someone filed a safety report. Does nothing if ADMIN_EMAIL isn't set.
+export function sendReportEmail({ reporterEmail, reportedEmail, reason, requestId }) {
+  if (!process.env.ADMIN_EMAIL) return Promise.resolve(false)
+
+  return deliver(
+    {
+      to: process.env.ADMIN_EMAIL,
+      subject: `MentHers safety report (request #${requestId})`,
+      text: [
+        `Reporter: ${reporterEmail}`,
+        `Reported: ${reportedEmail}`,
+        `Request: #${requestId}`,
+        '',
+        `Reason: ${reason}`,
+      ].join('\n'),
+    },
+    `Report about ${reportedEmail}: ${reason}`,
   )
 }

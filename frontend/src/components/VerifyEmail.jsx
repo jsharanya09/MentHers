@@ -5,7 +5,18 @@ const RESEND_SECONDS = 60
 
 // Asks for the 6-digit code that was emailed, to prove the address belongs to the person.
 // `onVerified(token)` runs after the code is accepted and may return a promise.
-function VerifyEmail({ email, onVerified, onChangeEmail }) {
+// `confirm(email, code)` checks the code and resolves with a value passed to onVerified.
+// By default it is the email-verification token used when signing up.
+const confirmForSignup = async (email, code) =>
+  (await confirmVerificationCode(email, code)).verificationToken
+
+function VerifyEmail({
+  email,
+  busyLabel = 'Verifying…',
+  confirm = confirmForSignup,
+  onVerified,
+  onChangeEmail,
+}) {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -37,8 +48,8 @@ function VerifyEmail({ email, onVerified, onChangeEmail }) {
     setError('')
     setNotice('')
     try {
-      const { verificationToken } = await confirmVerificationCode(email, code)
-      await onVerified(verificationToken)
+      const result = await confirm(email, code)
+      await onVerified(result)
     } catch (err) {
       setError(messageFor(err, 'Something went wrong. Please try again.'))
     } finally {
@@ -104,7 +115,7 @@ function VerifyEmail({ email, onVerified, onChangeEmail }) {
           Use a different email
         </button>
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? 'Verifying…' : 'Verify and continue'}
+          {busy ? busyLabel : 'Verify and continue'}
         </button>
       </div>
 

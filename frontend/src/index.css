@@ -51,8 +51,35 @@ body {
 }
 
 .site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding-top: 32px;
   padding-bottom: 24px;
+}
+
+.site-header nav a {
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.site-header nav a:hover {
+  text-decoration: underline;
+}
+
+.site-footer {
+  padding-top: 24px;
+  padding-bottom: 40px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.site-footer a,
+.prose a,
+.resend a,
+.field-hint a {
+  color: var(--primary);
 }
 
 .brand {
@@ -558,6 +585,138 @@ textarea:focus-visible {
   margin: 0;
   font-weight: 600;
   color: var(--primary);
+}
+
+/* Account dashboard */
+.section-title {
+  margin: 28px 0 12px;
+  font-size: 1.25rem;
+}
+
+.status {
+  flex: none;
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.status-pending {
+  color: var(--muted);
+}
+
+.status-accepted {
+  color: var(--primary);
+  background: var(--primary-tint);
+  border-color: var(--primary);
+}
+
+.status-declined {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.report-link {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.report-form {
+  margin-top: 12px;
+}
+
+.report-form label {
+  display: block;
+  font-weight: 600;
+}
+
+.report-form textarea {
+  margin: 4px 0 8px;
+}
+
+.account-box {
+  margin-top: 32px;
+}
+
+.account-box .section-title {
+  margin-top: 0;
+}
+
+.danger-box {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--error);
+  border-radius: var(--radius);
+}
+
+.danger-box p {
+  margin: 0 0 12px;
+}
+
+.btn-danger {
+  color: #fff;
+  background: var(--error);
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-danger {
+    color: #181320;
+  }
+}
+
+.dashboard-cta {
+  margin: 16px 0 0;
+}
+
+/* Privacy and safety page */
+.prose .card {
+  margin-bottom: 16px;
+}
+
+.prose h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+
+.prose p {
+  margin: 0 0 12px;
+}
+
+.prose ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.prose li {
+  margin-bottom: 8px;
+}
+
+/* AI */
+.insight {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  background: var(--primary-tint);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.insight-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.draft-button {
+  display: block;
+  margin: 4px 0 4px;
+  font-weight: 600;
 }
 
 /* Mentor inbox */
