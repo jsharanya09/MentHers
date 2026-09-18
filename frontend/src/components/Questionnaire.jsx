@@ -3,6 +3,7 @@ import { STEPS } from '../data/questions'
 import { validateStep } from '../utils/validation'
 import { submitAnswers } from '../api'
 import Field from './Field'
+import MatchResults from './MatchResults'
 import ThankYou from './ThankYou'
 
 function Questionnaire() {
@@ -11,7 +12,7 @@ function Questionnaire() {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [done, setDone] = useState(false)
+  const [result, setResult] = useState(null)
   const headingRef = useRef(null)
   const formRef = useRef(null)
 
@@ -55,8 +56,7 @@ function Questionnaire() {
     setSubmitting(true)
     setSubmitError('')
     try {
-      await submitAnswers(answers)
-      setDone(true)
+      setResult(await submitAnswers(answers))
     } catch {
       setSubmitError('Something went wrong sending your answers. Please try again.')
     } finally {
@@ -69,15 +69,30 @@ function Questionnaire() {
     setStepIndex((index) => Math.max(0, index - 1))
   }
 
+  // Go back to the first step but keep the answers so they can be tweaked.
+  const handleEdit = () => {
+    setStepIndex(0)
+    setResult(null)
+  }
+
   const handleRestart = () => {
     setAnswers({})
     setErrors({})
     setStepIndex(0)
-    setDone(false)
+    setResult(null)
   }
 
-  if (done) {
-    return <ThankYou answers={answers} onRestart={handleRestart} />
+  if (result) {
+    return answers.role === 'mentee' ? (
+      <MatchResults
+        answers={answers}
+        matches={result.matches}
+        onEdit={handleEdit}
+        onRestart={handleRestart}
+      />
+    ) : (
+      <ThankYou answers={answers} onRestart={handleRestart} />
+    )
   }
 
   return (
