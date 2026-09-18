@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Home from './components/Home'
+import MentorRequests from './components/MentorRequests'
 import Questionnaire from './components/Questionnaire'
 
 // Tiny hash router: '#/find' and '#/mentor' open the questionnaire, anything else is the home page.
@@ -21,9 +22,13 @@ const PAGES = {
   '#/mentor': { role: 'mentor', title: 'Become a mentor' },
 }
 
+// A mentor's private inbox lives at '#/requests/<token>'.
+const INBOX_PREFIX = '#/requests/'
+
 function App() {
   const hash = useHash()
   const page = PAGES[hash]
+  const inboxToken = hash.startsWith(INBOX_PREFIX) ? hash.slice(INBOX_PREFIX.length) : null
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -37,10 +42,17 @@ function App() {
         </a>
       </header>
       <main className="container">
-        {page ? (
+        {inboxToken ? (
+          <div className="narrow">
+            <MentorRequests token={inboxToken} />
+          </div>
+        ) : page ? (
           <div className="narrow">
             <h1 className="page-title">{page.title}</h1>
-            <p className="page-sub">Answer a few questions and we’ll help you find your match.</p>
+            <p className="page-sub">
+              MentHers is a mentoring community for women and girls. Answer a few questions and
+              we’ll help you find your match.
+            </p>
             <Questionnaire key={page.role} initialRole={page.role} />
           </div>
         ) : (
