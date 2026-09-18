@@ -50,7 +50,19 @@ const isProduction = process.env.NODE_ENV === 'production'
 // and HTTPS (for secure cookies) are detected correctly.
 if (isProduction) app.set('trust proxy', 1)
 
-app.use(cors())
+// Cross-origin access is only needed while developing (frontend and backend on different ports).
+// In production the backend serves the frontend itself, so it stays same-origin.
+if (!isProduction) app.use(cors())
+
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+  })
+  next()
+})
+
 app.use(express.json())
 
 // Simple in-memory limit per IP address, so the code endpoints can't be used to spam inboxes
@@ -231,7 +243,7 @@ app.post('/api/mentors', (req, res) => {
 })
 
 // A mentee asks to be introduced to a mentor. The mentor is notified by email and in their account.
-app.post('/api/intro-requests', (req, res) => {
+app.post('/api/intro-requests', rateLimit({ windowMs: HOUR, max: 30 }), (req, res) => {
   const { request, error } = parseIntroRequest(req.body)
   if (error) return res.status(400).json({ error })
 
@@ -373,6 +385,16 @@ const frontendDist = path.join(path.dirname(fileURLToPath(import.meta.url)), '..
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist))
 }
+
+// Last resort: bad JSON gets a 400, and any other unexpected error a plain 500, always as JSON.
+// eslint-disable-next-line no-unused-vars
+app.use((error, req, res, next) => {
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'That request couldn’t be read.' })
+  }
+  console.error('Unexpected error:', error)
+  res.status(500).json({ error: 'Something went wrong on our side. Please try again.' })
+})
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`)
