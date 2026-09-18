@@ -8,7 +8,6 @@ export function parseMenteeAnswers(body) {
 
   const valid =
     a.role === 'mentee' &&
-    a.womenOnly === true &&
     isText(a.name, 100) &&
     isEmail(a.email) &&
     isText(a.stage, 30) &&

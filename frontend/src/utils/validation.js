@@ -18,11 +18,6 @@ export function validateStep(step, answers) {
   for (const question of step.questions) {
     const value = answers[question.id]
 
-    if (question.type === 'confirm') {
-      if (question.required && value !== true) errors[question.id] = 'Please confirm to continue.'
-      continue
-    }
-
     if (question.required && isEmpty(value)) {
       errors[question.id] =
         question.type === 'single' || question.type === 'multi'

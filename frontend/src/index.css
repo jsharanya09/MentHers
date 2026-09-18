@@ -499,39 +499,6 @@ textarea:focus-visible {
   font-size: 0.9rem;
 }
 
-/* Women-only confirmation checkbox */
-.confirm {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.confirm.is-selected {
-  border-color: var(--primary);
-  background: var(--primary-tint);
-}
-
-.confirm input {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  accent-color: var(--primary);
-}
-
-.confirm:has(input:focus-visible) {
-  box-shadow: var(--focus);
-}
-
-.confirm + .field-hint {
-  margin: 6px 0 0 4px;
-}
-
 /* Intro requests */
 .match-action {
   margin-top: 16px;

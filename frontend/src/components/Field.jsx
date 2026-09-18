@@ -27,28 +27,6 @@ function Field({ question, value, role, error, onChange }) {
 
   const requiredMark = question.required ? <span className="required" aria-hidden="true"> *</span> : null
 
-  if (question.type === 'confirm') {
-    return (
-      <div className="field" data-question={question.id}>
-        <label className={`confirm ${value ? 'is-selected' : ''}`}>
-          <input
-            type="checkbox"
-            name={question.id}
-            checked={value === true}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={describedBy}
-            onChange={(event) => onChange(question.id, event.target.checked)}
-          />
-          <span>
-            {label}
-            {requiredMark}
-          </span>
-        </label>
-        {meta}
-      </div>
-    )
-  }
-
   if (question.type === 'single') {
     return (
       <fieldset className="field" aria-describedby={describedBy} data-question={question.id}>

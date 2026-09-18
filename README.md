@@ -44,10 +44,9 @@ it, stop the backend and delete the `backend/storage` folder.
   `backend/.env.example` to `backend/.env` and fill in the `SMTP_*` settings and `APP_URL` (the address of the
   frontend, used for the inbox link in the email).
 
-## Who can join
+## Who it's for
 
-MentHers is a mentoring community for women and girls. Everyone confirms this with a checkbox when they sign up.
-This is a self-confirmation and is not verified.
+MentHers is a mentoring community for women and girls.
 
 ## Contributing
 

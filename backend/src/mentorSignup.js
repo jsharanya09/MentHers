@@ -7,7 +7,6 @@ export function parseMentorSignup(body) {
 
   const valid =
     a.role === 'mentor' &&
-    a.womenOnly === true &&
     isText(a.name, 100) &&
     isEmail(a.email) &&
     isText(a.jobTitle, 100) &&
