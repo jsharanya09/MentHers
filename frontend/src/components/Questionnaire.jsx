@@ -92,12 +92,13 @@ function Questionnaire({ initialRole }) {
     return answers.role === 'mentee' ? (
       <MatchResults
         answers={answers}
+        menteeId={result.menteeId}
         matches={result.matches}
         onEdit={handleEdit}
         onRestart={handleRestart}
       />
     ) : (
-      <ThankYou answers={answers} onRestart={handleRestart} />
+      <ThankYou answers={answers} token={result.token} onRestart={handleRestart} />
     )
   }
 

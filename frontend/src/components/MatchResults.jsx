@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { optionLabel } from '../utils/labels'
+import IntroRequest from './IntroRequest'
 
 const initials = (name) =>
   name
@@ -25,7 +26,7 @@ function buildReasons(matched) {
   return reasons
 }
 
-function MatchResults({ answers, matches, onEdit, onRestart }) {
+function MatchResults({ answers, menteeId, matches, onEdit, onRestart }) {
   const headingRef = useRef(null)
 
   useEffect(() => {
@@ -60,7 +61,7 @@ function MatchResults({ answers, matches, onEdit, onRestart }) {
       </div>
 
       <ul className="match-list">
-        {matches.map(({ mentor, score, matched }) => (
+        {matches.map(({ mentor, score, matched, requested }) => (
           <li key={mentor.id} className="card match">
             <div className="match-head">
               <div className="avatar" aria-hidden="true">
@@ -86,6 +87,9 @@ function MatchResults({ answers, matches, onEdit, onRestart }) {
                 <li key={reason}>{reason}</li>
               ))}
             </ul>
+            <div className="match-action">
+              <IntroRequest mentor={mentor} menteeId={menteeId} alreadyRequested={requested} />
+            </div>
           </li>
         ))}
       </ul>

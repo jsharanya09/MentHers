@@ -17,10 +17,11 @@ function Home() {
   return (
     <>
       <section className="hero">
+        <p className="eyebrow">A mentoring community for women and girls</p>
         <h1>Find the mentor who’s been where you want to go.</h1>
         <p className="hero-sub">
-          MentHers matches you with mentors based on your goals, your interests and how you like to
-          work.
+          MentHers matches you with women mentors based on your goals, your interests and how you
+          like to work.
         </p>
         <div className="hero-actions">
           <a className="btn btn-primary" href="#/find">

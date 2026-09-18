@@ -48,6 +48,13 @@ export const STEPS = [
         required: true,
         autoComplete: 'email',
       },
+      {
+        id: 'womenOnly',
+        type: 'confirm',
+        label: 'I confirm that I’m a woman or girl.',
+        hint: 'MentHers is a mentoring community for women and girls.',
+        required: true,
+      },
     ],
   },
   {

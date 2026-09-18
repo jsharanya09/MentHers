@@ -1,16 +1,4 @@
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const isText = (value, max) =>
-  typeof value === 'string' && value.trim().length > 0 && value.length <= max
-
-const isOptionalText = (value, max) =>
-  value === undefined || value === null || (typeof value === 'string' && value.length <= max)
-
-const isList = (value) =>
-  Array.isArray(value) &&
-  value.length > 0 &&
-  value.length <= 20 &&
-  value.every((item) => typeof item === 'string' && item.length <= 50)
+import { isEmail, isList, isOptionalText, isText } from './validation.js'
 
 // Checks the mentor questionnaire answers sent by the frontend.
 // Returns { error } if something is wrong, otherwise { mentor } in the shape the database expects.
@@ -19,9 +7,9 @@ export function parseMentorSignup(body) {
 
   const valid =
     a.role === 'mentor' &&
+    a.womenOnly === true &&
     isText(a.name, 100) &&
-    isText(a.email, 200) &&
-    EMAIL_PATTERN.test(a.email.trim()) &&
+    isEmail(a.email) &&
     isText(a.jobTitle, 100) &&
     isText(a.company, 100) &&
     isText(a.bio, 1000) &&
