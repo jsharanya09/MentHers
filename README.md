@@ -30,6 +30,10 @@ npm run dev
 
 Run both at the same time in two terminals. The frontend forwards `/api` requests to the backend.
 
+The backend stores data in a SQLite database at `backend/storage/menthers.db`. It is created and filled with
+sample mentors automatically the first time the backend starts, and it is not committed to git. To reset
+it, stop the backend and delete the `backend/storage` folder.
+
 ## Contributing
 
 1. Clone the repo: `git clone https://github.com/jsharanya09/MentHers.git`

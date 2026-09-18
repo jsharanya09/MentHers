@@ -1,6 +1,28 @@
-// TODO: replace with a POST to /api/questionnaire once the backend route exists.
-// For now the answers are only logged so the UI can be built and tested on its own.
+// An error whose message came from the backend and is safe to show to the user.
+export class ApiError extends Error {}
+
+async function post(url, body) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new ApiError(data.error || `Request failed with status ${response.status}`)
+  }
+
+  return response.json()
+}
+
+// Mentees get back a ranked list of matching mentors.
+// Mentors are saved, and get back an empty list of matches.
 export async function submitAnswers(answers) {
-  console.log('Questionnaire submitted:', answers)
-  return { ok: true }
+  if (answers.role === 'mentor') {
+    await post('/api/mentors', answers)
+    return { matches: [] }
+  }
+
+  return post('/api/matches', answers)
 }

@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { STEPS } from '../data/questions'
 import { validateStep } from '../utils/validation'
-import { submitAnswers } from '../api'
+import { ApiError, submitAnswers } from '../api'
 import Field from './Field'
+import MatchResults from './MatchResults'
 import ThankYou from './ThankYou'
 
-function Questionnaire() {
+function Questionnaire({ initialRole }) {
   const [stepIndex, setStepIndex] = useState(0)
-  const [answers, setAnswers] = useState({})
+  const [answers, setAnswers] = useState({ role: initialRole })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [done, setDone] = useState(false)
+  const [result, setResult] = useState(null)
   const headingRef = useRef(null)
   const formRef = useRef(null)
 
-  const step = STEPS[stepIndex]
-  const isLastStep = stepIndex === STEPS.length - 1
-  const progress = Math.round(((stepIndex + 1) / STEPS.length) * 100)
+  // Some steps are only for one role (e.g. mentors are asked about their work).
+  const steps = STEPS.filter((s) => !s.roles || s.roles.includes(answers.role))
+  const step = steps[stepIndex]
+  const isLastStep = stepIndex === steps.length - 1
+  const progress = Math.round(((stepIndex + 1) / steps.length) * 100)
 
   // Move focus to the step heading so keyboard and screen reader users land at the top.
   useEffect(() => {
@@ -55,10 +58,13 @@ function Questionnaire() {
     setSubmitting(true)
     setSubmitError('')
     try {
-      await submitAnswers(answers)
-      setDone(true)
-    } catch {
-      setSubmitError('Something went wrong sending your answers. Please try again.')
+      setResult(await submitAnswers(answers))
+    } catch (error) {
+      setSubmitError(
+        error instanceof ApiError
+          ? error.message
+          : 'Something went wrong sending your answers. Please try again.',
+      )
     } finally {
       setSubmitting(false)
     }
@@ -69,15 +75,30 @@ function Questionnaire() {
     setStepIndex((index) => Math.max(0, index - 1))
   }
 
-  const handleRestart = () => {
-    setAnswers({})
-    setErrors({})
+  // Go back to the first step but keep the answers so they can be tweaked.
+  const handleEdit = () => {
     setStepIndex(0)
-    setDone(false)
+    setResult(null)
   }
 
-  if (done) {
-    return <ThankYou answers={answers} onRestart={handleRestart} />
+  const handleRestart = () => {
+    setAnswers({ role: initialRole })
+    setErrors({})
+    setStepIndex(0)
+    setResult(null)
+  }
+
+  if (result) {
+    return answers.role === 'mentee' ? (
+      <MatchResults
+        answers={answers}
+        matches={result.matches}
+        onEdit={handleEdit}
+        onRestart={handleRestart}
+      />
+    ) : (
+      <ThankYou answers={answers} onRestart={handleRestart} />
+    )
   }
 
   return (
@@ -86,7 +107,7 @@ function Questionnaire() {
         <div className="progress-bar" style={{ width: `${progress}%` }} />
       </div>
       <p className="step-count">
-        Step {stepIndex + 1} of {STEPS.length}
+        Step {stepIndex + 1} of {steps.length}
       </p>
 
       <h2 tabIndex={-1} ref={headingRef}>
