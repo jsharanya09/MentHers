@@ -70,7 +70,7 @@ function MatchResults({ answers, menteeId, aiDrafting, matches, onEdit, onRestar
               <div className="match-who">
                 <h3>
                   {mentor.name}
-                  {mentor.sample && <span className="sample-badge">Sample</span>}
+                  {mentor.sample && <span className="sample-badge">Demo</span>}
                 </h3>
                 <p>
                   {mentor.title}, {mentor.company}

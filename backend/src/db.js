@@ -119,10 +119,14 @@ const toRow = (mentor, isSample) => ({
   token: newToken(),
 })
 
-// Fill an empty database with the sample mentors so the app has something to match against.
-if (db.prepare('SELECT COUNT(*) AS count FROM mentors').get().count === 0) {
+// Make sure the demo mentors exist, so the app has people to match with. Adds any that are missing
+// (existing databases get newly added ones too). Set SEED_SAMPLE_MENTORS=false to turn this off.
+if (process.env.SEED_SAMPLE_MENTORS !== 'false') {
+  const sampleExists = db.prepare('SELECT 1 FROM mentors WHERE is_sample = 1 AND name = ?')
   const seed = db.transaction(() => {
-    for (const mentor of sampleMentors) insertMentor.run(toRow(mentor, true))
+    for (const mentor of sampleMentors) {
+      if (!sampleExists.get(mentor.name)) insertMentor.run(toRow(mentor, true))
+    }
   })
   seed()
 }
