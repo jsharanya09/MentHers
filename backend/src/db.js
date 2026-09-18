@@ -71,6 +71,23 @@ db.exec(`
     attempts   INTEGER NOT NULL DEFAULT 0
   );
 
+  -- Signed-in browsers. Only a hash of the session token is stored.
+  CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY,
+    email      TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
+
+  -- Safety reports. Kept even if the reporter later deletes their account.
+  CREATE TABLE IF NOT EXISTS reports (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_email TEXT NOT NULL,
+    reported_email TEXT NOT NULL,
+    request_id     INTEGER,
+    reason         TEXT NOT NULL,
+    created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Proof that someone entered the code sent to an email. Needed to sign up with that email.
   CREATE TABLE IF NOT EXISTS email_verifications (
     token      TEXT PRIMARY KEY,
@@ -78,6 +95,15 @@ db.exec(`
     expires_at INTEGER NOT NULL
   );
 `)
+
+// Intro requests can be accepted or declined by the mentor. Added with ALTER TABLE for older databases.
+const requestColumns = db.prepare('PRAGMA table_info(intro_requests)').all().map((c) => c.name)
+if (!requestColumns.includes('status')) {
+  db.exec("ALTER TABLE intro_requests ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'")
+}
+if (!requestColumns.includes('responded_at')) {
+  db.exec('ALTER TABLE intro_requests ADD COLUMN responded_at TEXT')
+}
 
 // Each mentor has a secret token that opens their private inbox link.
 // Added with ALTER TABLE so databases created before this column existed are upgraded too.
@@ -236,6 +262,7 @@ export function listRequestsForMentor(mentorId) {
       `SELECT r.id,
               r.message,
               r.seen_at IS NULL AS isNew,
+              r.status,
               strftime('%Y-%m-%dT%H:%M:%SZ', r.created_at) AS createdAt,
               m.name,
               m.email,
@@ -321,4 +348,130 @@ export function getMenteeProfile(id) {
 export function getMentorProfile(id) {
   const row = db.prepare('SELECT * FROM mentors WHERE id = ?').get(id)
   return row ? fromRow(row) : undefined
+}
+
+// ---- Accounts and sign-in ----
+
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex')
+
+// Starts a signed-in session for an email. Returns the secret token to put in a cookie.
+export function createSession(email, now = Date.now()) {
+  db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(now)
+  const token = crypto.randomBytes(32).toString('hex')
+  db.prepare('INSERT INTO sessions (token_hash, email, expires_at) VALUES (?, ?, ?)').run(
+    hashToken(token),
+    email,
+    now + SESSION_TTL_MS,
+  )
+  return token
+}
+
+export function getSessionEmail(token, now = Date.now()) {
+  if (typeof token !== 'string' || token.length !== 64) return null
+  const row = db
+    .prepare('SELECT email FROM sessions WHERE token_hash = ? AND expires_at > ?')
+    .get(hashToken(token), now)
+  return row?.email ?? null
+}
+
+export function deleteSession(token) {
+  if (typeof token === 'string') {
+    db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(token))
+  }
+}
+
+export function hasAccount(email) {
+  return (
+    db.prepare('SELECT 1 AS ok FROM mentors WHERE email = ?').get(email) !== undefined ||
+    db.prepare('SELECT 1 AS ok FROM mentees WHERE email = ?').get(email) !== undefined
+  )
+}
+
+export function getMentorByEmail(email) {
+  return db.prepare('SELECT id, name, title, company FROM mentors WHERE email = ?').get(email)
+}
+
+export function getLatestMentee(email) {
+  return db
+    .prepare('SELECT id, name FROM mentees WHERE email = ? ORDER BY created_at DESC, rowid DESC LIMIT 1')
+    .get(email)
+}
+
+// Intro requests a mentee has sent. A mentor's email is only revealed once they accept.
+export function listSentRequests(email) {
+  return db
+    .prepare(
+      `SELECT r.id,
+              r.message,
+              r.status,
+              strftime('%Y-%m-%dT%H:%M:%SZ', r.created_at) AS createdAt,
+              mt.name  AS mentorName,
+              mt.title AS mentorTitle,
+              mt.company AS mentorCompany,
+              CASE WHEN r.status = 'accepted' THEN mt.email END AS mentorEmail
+         FROM intro_requests r
+         JOIN mentors mt ON mt.id = r.mentor_id
+        WHERE r.mentee_email = ?
+        ORDER BY r.created_at DESC, r.id DESC`,
+    )
+    .all(email)
+}
+
+// A mentor accepts or declines a pending request. Returns details for the notification email,
+// or null if that request isn't theirs or was already answered.
+export function respondToRequest(requestId, mentorId, status) {
+  const row = db
+    .prepare(
+      `SELECT r.id, r.mentee_email AS menteeEmail, mt.name AS menteeName,
+              m.name AS mentorName, m.email AS mentorEmail
+         FROM intro_requests r
+         JOIN mentees mt ON mt.id = r.mentee_id
+         JOIN mentors m ON m.id = r.mentor_id
+        WHERE r.id = ? AND r.mentor_id = ? AND r.status = 'pending'`,
+    )
+    .get(requestId, mentorId)
+  if (!row) return null
+
+  db.prepare(
+    "UPDATE intro_requests SET status = ?, responded_at = CURRENT_TIMESTAMP, seen_at = COALESCE(seen_at, CURRENT_TIMESTAMP) WHERE id = ?",
+  ).run(status, requestId)
+  return row
+}
+
+// ---- Safety ----
+
+// Who is on each side of a request, so a report can be checked and attributed.
+export function getRequestParties(requestId) {
+  return db
+    .prepare(
+      `SELECT r.id, r.mentee_email AS menteeEmail, m.email AS mentorEmail, m.id AS mentorId
+         FROM intro_requests r
+         JOIN mentors m ON m.id = r.mentor_id
+        WHERE r.id = ?`,
+    )
+    .get(requestId)
+}
+
+export function saveReport({ reporterEmail, reportedEmail, requestId, reason }) {
+  db.prepare(
+    'INSERT INTO reports (reporter_email, reported_email, request_id, reason) VALUES (?, ?, ?, ?)',
+  ).run(reporterEmail, reportedEmail, requestId, reason)
+}
+
+// Permanently deletes everything stored for an email: profiles, requests, codes and sessions.
+// Safety reports are kept so that moderation still works.
+export function deleteAccount(email) {
+  const remove = db.transaction(() => {
+    for (const { id } of db.prepare('SELECT id FROM mentors WHERE email = ?').all(email)) {
+      db.prepare('DELETE FROM intro_requests WHERE mentor_id = ?').run(id)
+      db.prepare('DELETE FROM mentors WHERE id = ?').run(id)
+    }
+    db.prepare('DELETE FROM intro_requests WHERE mentee_email = ?').run(email)
+    db.prepare('DELETE FROM mentees WHERE email = ?').run(email)
+    db.prepare('DELETE FROM email_codes WHERE email = ?').run(email)
+    db.prepare('DELETE FROM email_verifications WHERE email = ?').run(email)
+    db.prepare('DELETE FROM sessions WHERE email = ?').run(email)
+  })
+  remove()
 }

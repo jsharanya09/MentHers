@@ -1,25 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
-// Shown to mentors after signing up. The private link opens their inbox of intro requests.
-function ThankYou({ answers, token, onRestart }) {
+// Shown to mentors after signing up.
+function ThankYou({ answers, onRestart }) {
   const headingRef = useRef(null)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     headingRef.current?.focus()
   }, [])
 
   const firstName = answers.name?.trim().split(' ')[0]
-  const inboxUrl = `${window.location.origin}/#/requests/${token}`
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(inboxUrl)
-      setCopied(true)
-    } catch {
-      // Clipboard can be blocked; the link is still shown so it can be copied by hand.
-    }
-  }
 
   return (
     <section className="card thank-you">
@@ -27,32 +16,21 @@ function ThankYou({ answers, token, onRestart }) {
         Thank you{firstName ? `, ${firstName}` : ''}!
       </h2>
       <p>
-        You’re signed up as a mentor. Mentees whose goals fit your experience will now see your
-        profile in their matches.
+        You’re signed up as a mentor. Mentees whose goals fit your experience will now see your profile in
+        their matches.
       </p>
-
-      <div className="inbox-box">
-        <h3>Your private inbox link</h3>
-        <p className="field-hint">
-          When a mentee asks to connect, we’ll email {answers.email} and show the request here.
-          Save this link. Anyone who has it can see your requests, so keep it private.
-        </p>
-        <a className="inbox-link" href={`#/requests/${token}`}>
-          {inboxUrl}
+      <p className="field-hint">
+        When a mentee asks to connect, we’ll email {answers.email} and you can accept or decline from your
+        account.
+      </p>
+      <div className="actions actions-center">
+        <a className="btn btn-primary" href="#/account">
+          Go to my account
         </a>
-        <div className="actions actions-center">
-          <button type="button" className="btn btn-secondary btn-small" onClick={handleCopy}>
-            {copied ? 'Copied!' : 'Copy link'}
-          </button>
-          <a className="btn btn-primary btn-small" href={`#/requests/${token}`}>
-            Open my inbox
-          </a>
-        </div>
+        <button type="button" className="btn btn-secondary" onClick={onRestart}>
+          Start over
+        </button>
       </div>
-
-      <button type="button" className="btn btn-secondary" onClick={onRestart}>
-        Start over
-      </button>
     </section>
   )
 }

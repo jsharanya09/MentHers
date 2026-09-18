@@ -57,6 +57,9 @@ function MatchResults({ answers, menteeId, aiDrafting, matches, onEdit, onRestar
           <button type="button" className="btn btn-secondary" onClick={onRestart}>
             Start over
           </button>
+          <a className="btn btn-secondary" href="#/account">
+            My requests
+          </a>
         </div>
       </div>
 
