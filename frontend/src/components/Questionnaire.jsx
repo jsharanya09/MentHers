@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { STEPS } from '../data/questions'
 import { validateStep } from '../utils/validation'
-import { ApiError, submitAnswers } from '../api'
+import { ApiError, sendVerificationCode, submitAnswers } from '../api'
 import Field from './Field'
 import MatchResults from './MatchResults'
 import ThankYou from './ThankYou'
+import VerifyEmail from './VerifyEmail'
 
 function Questionnaire({ initialRole }) {
   const [stepIndex, setStepIndex] = useState(0)
@@ -13,6 +14,10 @@ function Questionnaire({ initialRole }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [result, setResult] = useState(null)
+  // 'questions' while answering, then 'verify' to confirm the email address before saving.
+  const [stage, setStage] = useState('questions')
+  // Set once the emailed code is accepted: { email, token }.
+  const [verification, setVerification] = useState(null)
   const headingRef = useRef(null)
   const formRef = useRef(null)
 
@@ -37,6 +42,19 @@ function Questionnaire({ initialRole }) {
     }
   }
 
+  const email = (answers.email ?? '').trim().toLowerCase()
+
+  const showSubmitError = (error) => {
+    // The backend says 403 when the verification is missing or has expired, so ask again next time.
+    if (error instanceof ApiError && error.status === 403) setVerification(null)
+
+    setSubmitError(
+      error instanceof ApiError
+        ? error.message
+        : 'Something went wrong sending your answers. Please try again.',
+    )
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
 
@@ -58,16 +76,36 @@ function Questionnaire({ initialRole }) {
     setSubmitting(true)
     setSubmitError('')
     try {
-      setResult(await submitAnswers(answers))
+      if (verification?.email === email) {
+        setResult(await submitAnswers(answers, verification.token))
+      } else {
+        // Not verified yet: email a code and ask for it before saving anything.
+        await sendVerificationCode(email)
+        setStage('verify')
+      }
     } catch (error) {
-      setSubmitError(
-        error instanceof ApiError
-          ? error.message
-          : 'Something went wrong sending your answers. Please try again.',
-      )
+      showSubmitError(error)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Runs once the emailed code was accepted. Saves the answers with the proof of verification.
+  const handleVerified = async (token) => {
+    setVerification({ email, token })
+    try {
+      setResult(await submitAnswers(answers, token))
+    } catch (error) {
+      showSubmitError(error)
+    } finally {
+      // Either way, go back to the questions so "Change my answers" and error messages show there.
+      setStage('questions')
+    }
+  }
+
+  const handleChangeEmail = () => {
+    setStage('questions')
+    setStepIndex(0)
   }
 
   const handleBack = () => {
@@ -100,6 +138,10 @@ function Questionnaire({ initialRole }) {
     ) : (
       <ThankYou answers={answers} token={result.token} onRestart={handleRestart} />
     )
+  }
+
+  if (stage === 'verify') {
+    return <VerifyEmail email={email} onVerified={handleVerified} onChangeEmail={handleChangeEmail} />
   }
 
   return (

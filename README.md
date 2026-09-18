@@ -34,6 +34,14 @@ The backend stores data in a SQLite database at `backend/storage/menthers.db`. I
 sample mentors automatically the first time the backend starts, and it is not committed to git. To reset
 it, stop the backend and delete the `backend/storage` folder.
 
+## Email verification
+
+Mentors and mentees must verify their email address before they can sign up. After the last question, we email a
+6-digit code (valid for 10 minutes) and they enter it on the "Verify your email" screen.
+
+Until email is set up (see below), the code is not emailed. It is printed in the terminal where the backend is
+running, in a line like `Verification code: 123456`. Use that to try the app locally.
+
 ## How intro requests work
 
 - A mentee can click **Request intro** on a match and write a short message.

@@ -61,6 +61,22 @@ db.exec(`
     created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (mentor_id, mentee_email)
   );
+
+  -- One active sign-in code per email. Times are milliseconds since 1970.
+  CREATE TABLE IF NOT EXISTS email_codes (
+    email      TEXT PRIMARY KEY,
+    code_hash  TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    sent_at    INTEGER NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0
+  );
+
+  -- Proof that someone entered the code sent to an email. Needed to sign up with that email.
+  CREATE TABLE IF NOT EXISTS email_verifications (
+    token      TEXT PRIMARY KEY,
+    email      TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
 `)
 
 // Each mentor has a secret token that opens their private inbox link.
@@ -234,4 +250,52 @@ export function markRequestsSeen(mentorId) {
   db.prepare(
     'UPDATE intro_requests SET seen_at = CURRENT_TIMESTAMP WHERE mentor_id = ? AND seen_at IS NULL',
   ).run(mentorId)
+}
+
+// ---- Email verification ----
+
+export function purgeExpiredVerifications(now) {
+  db.prepare('DELETE FROM email_codes WHERE expires_at < ?').run(now)
+  db.prepare('DELETE FROM email_verifications WHERE expires_at < ?').run(now)
+}
+
+export function getEmailCode(email) {
+  return db.prepare('SELECT * FROM email_codes WHERE email = ?').get(email)
+}
+
+// Replaces any earlier code for this email, and resets the wrong-guess counter.
+export function saveEmailCode({ email, codeHash, expiresAt, sentAt }) {
+  db.prepare(
+    `INSERT INTO email_codes (email, code_hash, expires_at, sent_at, attempts)
+     VALUES (?, ?, ?, ?, 0)
+     ON CONFLICT(email) DO UPDATE SET
+       code_hash = excluded.code_hash,
+       expires_at = excluded.expires_at,
+       sent_at = excluded.sent_at,
+       attempts = 0`,
+  ).run(email, codeHash, expiresAt, sentAt)
+}
+
+export function addFailedCodeAttempt(email) {
+  db.prepare('UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?').run(email)
+}
+
+export function deleteEmailCode(email) {
+  db.prepare('DELETE FROM email_codes WHERE email = ?').run(email)
+}
+
+export function saveVerificationToken(email, token, expiresAt) {
+  db.prepare('INSERT INTO email_verifications (token, email, expires_at) VALUES (?, ?, ?)').run(
+    token,
+    email,
+    expiresAt,
+  )
+}
+
+export function isEmailVerified(email, token, now = Date.now()) {
+  if (typeof token !== 'string' || token.length !== 32) return false
+  const row = db
+    .prepare('SELECT 1 AS ok FROM email_verifications WHERE token = ? AND email = ? AND expires_at > ?')
+    .get(token, email, now)
+  return row !== undefined
 }
