@@ -1,4 +1,7 @@
 import 'dotenv/config'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import {
@@ -41,6 +44,11 @@ import { isEmail, isText } from './validation.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const isProduction = process.env.NODE_ENV === 'production'
+
+// Behind a hosting provider's proxy, trust it so visitors' real IP addresses (for rate limits)
+// and HTTPS (for secure cookies) are detected correctly.
+if (isProduction) app.set('trust proxy', 1)
 
 app.use(cors())
 app.use(express.json())
@@ -89,7 +97,7 @@ function startSession(res, email) {
   res.cookie(SESSION_COOKIE, createSession(email), {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     maxAge: SESSION_MAX_AGE_MS,
   })
 }
@@ -354,6 +362,30 @@ app.post('/api/reports', requireUser, rateLimit({ windowMs: HOUR, max: 20 }), (r
   res.status(201).json({ ok: true })
 })
 
+// Unknown API paths get a JSON 404 instead of the web page.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found' })
+})
+
+// When the frontend has been built (npm run build in frontend/), serve it from here too, so the
+// whole app runs as a single service.
+const frontendDist = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'frontend', 'dist')
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist))
+}
+
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`)
+  if (fs.existsSync(frontendDist)) console.log('Serving the built frontend from frontend/dist')
+
+  if (!process.env.SMTP_HOST) {
+    console.warn(
+      isProduction
+        ? 'WARNING: SMTP_HOST is not set. Verification codes are NOT being emailed, so nobody can sign up. Set the SMTP_* variables.'
+        : 'Email is not configured: verification codes are printed here instead of being emailed.',
+    )
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.log('AI features are off (ANTHROPIC_API_KEY is not set). Matching uses rules only.')
+  }
 })
