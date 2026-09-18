@@ -49,7 +49,6 @@ function MatchResults({ answers, matches, onEdit, onRestart }) {
             ? 'Ranked by how well they fit your goals, interests and schedule.'
             : 'Try choosing more areas of interest or meeting formats to see more mentors.'}
         </p>
-        <p className="sample-note">These are sample mentors while we build the app.</p>
         <div className="actions actions-start">
           <button type="button" className="btn btn-secondary" onClick={onEdit}>
             Change my answers
@@ -68,7 +67,10 @@ function MatchResults({ answers, matches, onEdit, onRestart }) {
                 {initials(mentor.name)}
               </div>
               <div className="match-who">
-                <h3>{mentor.name}</h3>
+                <h3>
+                  {mentor.name}
+                  {mentor.sample && <span className="sample-badge">Sample</span>}
+                </h3>
                 <p>
                   {mentor.title}, {mentor.company}
                 </p>

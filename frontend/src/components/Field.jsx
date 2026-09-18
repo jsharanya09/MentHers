@@ -133,6 +133,7 @@ function Field({ question, value, role, error, onChange }) {
         <input
           {...inputProps}
           type={question.type === 'email' ? 'email' : 'text'}
+          maxLength={question.maxLength}
           autoComplete={question.autoComplete}
         />
       )}

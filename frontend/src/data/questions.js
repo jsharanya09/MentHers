@@ -81,6 +81,40 @@ export const STEPS = [
     ],
   },
   {
+    id: 'work',
+    title: 'About your work',
+    // Steps with `roles` are only shown to those roles.
+    roles: ['mentor'],
+    questions: [
+      {
+        id: 'jobTitle',
+        type: 'text',
+        label: 'Job title',
+        placeholder: 'e.g. Senior Software Engineer',
+        required: true,
+        maxLength: 100,
+        autoComplete: 'organization-title',
+      },
+      {
+        id: 'company',
+        type: 'text',
+        label: 'Company or organization',
+        required: true,
+        maxLength: 100,
+        autoComplete: 'organization',
+      },
+      {
+        id: 'bio',
+        type: 'textarea',
+        label: 'Short bio',
+        hint: 'Mentees will see this on your profile.',
+        placeholder: 'Tell mentees a bit about your experience and how you can help.',
+        required: true,
+        maxLength: 500,
+      },
+    ],
+  },
+  {
     id: 'goals',
     title: 'Goals and skills',
     questions: [

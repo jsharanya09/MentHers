@@ -1,20 +1,28 @@
-// Mentees get back a ranked list of matching mentors.
-// TODO: mentor answers are only logged for now. Save them once a mentor sign-up route exists.
-export async function submitAnswers(answers) {
-  if (answers.role !== 'mentee') {
-    console.log('Mentor questionnaire submitted:', answers)
-    return { matches: [] }
-  }
+// An error whose message came from the backend and is safe to show to the user.
+export class ApiError extends Error {}
 
-  const response = await fetch('/api/matches', {
+async function post(url, body) {
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(answers),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`)
+    const data = await response.json().catch(() => ({}))
+    throw new ApiError(data.error || `Request failed with status ${response.status}`)
   }
 
   return response.json()
+}
+
+// Mentees get back a ranked list of matching mentors.
+// Mentors are saved, and get back an empty list of matches.
+export async function submitAnswers(answers) {
+  if (answers.role === 'mentor') {
+    await post('/api/mentors', answers)
+    return { matches: [] }
+  }
+
+  return post('/api/matches', answers)
 }

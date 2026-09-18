@@ -41,6 +41,7 @@ export function matchMentors(mentee, mentors, limit = 5) {
         title: mentor.title,
         company: mentor.company,
         bio: mentor.bio,
+        sample: mentor.sample,
       },
       score,
       // What the mentee and mentor have in common, so the UI can explain the match.

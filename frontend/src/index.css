@@ -385,11 +385,17 @@ textarea:focus-visible {
   margin-bottom: 4px;
 }
 
-.sample-note {
-  margin: 0 0 16px;
-  font-size: 0.85rem;
-  font-style: italic;
+.sample-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  vertical-align: middle;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
 }
 
 .actions-start {
