@@ -6,9 +6,9 @@ import Field from './Field'
 import MatchResults from './MatchResults'
 import ThankYou from './ThankYou'
 
-function Questionnaire() {
+function Questionnaire({ initialRole }) {
   const [stepIndex, setStepIndex] = useState(0)
-  const [answers, setAnswers] = useState({})
+  const [answers, setAnswers] = useState({ role: initialRole })
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -76,7 +76,7 @@ function Questionnaire() {
   }
 
   const handleRestart = () => {
-    setAnswers({})
+    setAnswers({ role: initialRole })
     setErrors({})
     setStepIndex(0)
     setResult(null)
